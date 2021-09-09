@@ -1,1 +1,1 @@
-web: java -cp target/classes:target/dependency/* edu.escuelaing.arem.HttpServer.HttpServer
+web: java -cp target/classes:target/dependency/* edu.escuelaing.arem.HttpServer.ClientServer

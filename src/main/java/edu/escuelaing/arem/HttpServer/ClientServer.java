@@ -1,7 +1,11 @@
 package edu.escuelaing.arem.HttpServer;
 
+import edu.escuelaing.arem.app.trigcalculator.TrigCalculator;
+
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class is where the client establishes connection to the server.
@@ -10,35 +14,109 @@ import java.net.*;
 public class ClientServer
 {
     /**
-     * This is the main method executed by the client that interacts with the servers.
-     * @param args Client running the server.
-     * @throws IOException Client error exception.
+     * This method starts the HTTP server.
+     * @param args Item to be displayed by the server.
+     * @throws IOException Exception of a server malfunction.
      */
-    public static void main(String[] args) throws IOException 
+    public void startServer (String[] args) throws IOException 
     {
-        Socket echoSocket = null;
-        PrintWriter out = null;
-        BufferedReader in = null;
+        int port = getPort();
+        ServerSocket serverSocket = null;
         try {
-            echoSocket = new Socket("127.0.0.1", 35000);
-            out = new PrintWriter(echoSocket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-        } catch (UnknownHostException e) {
-            System.err.println("Don’t know about host!.");
-            System.exit(1);
+            serverSocket = new ServerSocket(port);
         } catch (IOException e) {
-            System.err.println("Couldn’t get I/O for " + "the connection to: localhost.");
+            System.err.println("Could not listen on port: " + port);
             System.exit(1);
         }
-        BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-        String userInput;
-        while ((userInput = stdIn.readLine()) != null) {
-            out.println(userInput);
-            System.out.println("echo: " + in.readLine());
+        Socket clientSocket = null;
+        boolean running = true;
+        while (running) {
+            try {
+                System.out.println("Listo para recibir en puerto: " + port);
+                clientSocket = serverSocket.accept();
+            } catch (IOException e) {
+                System.err.println("Accept failed.");
+                System.exit(1);
+            }
+            proccessRequest(clientSocket);
         }
-        out.close();
+        serverSocket.close();
+    }
+    /**
+     * This method perform the server request process and displays its header, received and request.
+     * @param clientSocket Client that wants to run the HTTP server.
+     * @throws IOException Exception in the malfunction of some request.
+     */
+    public void proccessRequest (Socket clientSocket) throws IOException
+    {
+        BufferedReader in;
+        try (PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            String inputLine;
+            String method = "";
+            String path = "";
+            String version = "";
+            List<String> headers = new ArrayList<String>();
+            while ((inputLine = in.readLine()) != null) {
+                if (method.isEmpty()){
+                    String[] requestStrings = inputLine.split(" ");
+                    method = requestStrings[0];
+                    path = requestStrings[1];
+                    version = requestStrings[2];
+                    System.out.println("Request: " + method + " " + path + " " + version);
+                }
+                else {
+                    System.out.println("Header: " + inputLine);
+                    headers.add(inputLine);
+                }
+                System.out.println("Received: " + inputLine);
+                if (!in.ready()) {
+                    break;
+                }
+            }
+            String data = path.substring(1, path.length());
+            String[] newPath = data.split("-");
+            String operation = newPath[0];
+            String number = newPath[1];
+            double newNumber = Double.parseDouble(number);
+            String responseMsg = processRequest(operation, newNumber);
+            out.println(responseMsg);
+        }
         in.close();
-        stdIn.close();
-        echoSocket.close();
+        clientSocket.close();
+    }
+    public static String processRequest (String op, double number) 
+    {
+        String answer = "";
+        if (op.equals("sin") || op.equals("cos") || op.equals("tan")) {
+            switch (op) {
+                case "sin":
+                    answer = TrigCalculator.getSin(number);
+                    break;
+                case "cos":
+                    answer = TrigCalculator.getCos(number);
+                    break;
+                case "tan":
+                    answer = TrigCalculator.getTan(number);
+                    break;
+                default:
+                    answer = "No se puede realizar.";
+                    break;
+            }
+        }
+        return "HTTP/1.1 200 OK\r\n"
+                + "Content-Type: application/json" + 
+                "\r\n"+ answer;
+    }
+    /**
+     * This method get the port.
+     * @return the port.
+     */
+    public static int getPort () 
+    {
+        if (System.getenv("PORT") != null) {
+            return Integer.parseInt(System.getenv("PORT"));
+        }
+        return 35000;
     }
 }

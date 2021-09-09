@@ -6,20 +6,14 @@ package edu.escuelaing.arem.app.trigcalculator;
  */
 public class TrigCalculator
 {
-    private static TrigCalculator instance = new TrigCalculator();
     /**
-     * This is the constructor method of the class.
+     * This methot get a sin of a number.
+     * @param number The number of the operation.
+     * @return The sin of a number.
      */
-    private TrigCalculator() 
+    public static double getSin(double number) 
     {
-    }
-    /**
-     * This method generates the instance.
-     * @return Singleton.
-     */
-    public static TrigCalculator getInstance()
-    {
-        return instance;
+        return Math.sin(number);
     }
     /**
      * This methot get a cos of a number.
@@ -27,15 +21,6 @@ public class TrigCalculator
      * @return The cos of a number.
      */
     public static double getCos(double number) 
-    {
-        return Math.sin(number);
-    }
-    /**
-     * This methot get a sen of a number.
-     * @param number The number of the operation.
-     * @return The sen of a number.
-     */
-    public static double getSen(double number) 
     {
         return Math.cos(number);
     }
